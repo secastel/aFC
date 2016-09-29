@@ -257,7 +257,7 @@ def main():
 def return_cov(sample):
 	global df_cov;
 	
-	if sample in df_cov.columns():
+	if sample in df_cov.columns:
 		return(df_cov[sample].tolist());
 	else:
 		return([]);
@@ -356,6 +356,7 @@ def correct_covariates(df_test):
 			df_test_corrected['pheno_cor'] = df_test_corrected['pheno'];
 	else:
 		# covariates not provided
+		df_test_corrected = copy.deepcopy(df_test);
 		df_test_corrected['pheno_cor'] = df_test_corrected['pheno'];
 
 	
