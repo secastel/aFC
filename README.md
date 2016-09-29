@@ -33,6 +33,6 @@ sid	pid	sid_chr	sid_pos	log2_esize	log2_esize_lower	log2_esize_upper
 
 * 1 - **sid** - Variant ID.
 * 2 - **pid** - Phenotype (gene) ID.
-* 3 - **log2_aFC** - Allelic fold change in log2.
+* 3 - **log2_aFC** - allelic Fold Change in log2.
 * 4 - **log2_aFC_lower** - Lower estimate of 95% confidenace interval of log2(aFC).
 * 5 - **log2_aFC_upper** - Upper estimate of 95% confidenace interval of log2(aFC).
