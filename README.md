@@ -2,7 +2,7 @@
 # aFC
 **a**llelic **F**old **C**hange
 
-Calculates allelic fold change (aFC) using standard input files for [fastQTL](http://fastqtl.sourceforge.net).
+Calculates allelic Fold Change (aFC) using standard input files for [fastQTL](http://fastqtl.sourceforge.net).
 
 Method developed by [Pejman Mohmammadi](mailto:pmohammadi@nygenome.org), software by [Stephane E. Castel](mailto:scastel@nygenome.org) both in the [Lappalainen Lab](http://tllab.org) at the New York Genome Center and Columbia University Department of Systems Biology.
 
