@@ -12,25 +12,25 @@ import numpy;
 import math;
 import scikits.bootstrap as boot;
 import time;
-import warnings
+import warnings;
 
 def main():
 	parser = argparse.ArgumentParser()
 	# REQUIRED
 	parser.add_argument("--vcf", required=True, help="Genotype VCF")
-	parser.add_argument("--cov", required=True, help="Covariates file")
 	parser.add_argument("--pheno", required=True, help="Phenotype file")
-	parser.add_argument("--qtl", required=True, help="File containing QTL to retrieve expression effect sizes for. Should contain tab separated columns 'pid' with phenotype (gene) IDs and 'sid' with SNP IDs.")
+	parser.add_argument("--qtl", required=True, help="File containing QTL to calculate allelic fold change for. Should contain tab separated columns 'pid' with phenotype (gene) IDs and 'sid' with SNP IDs. Optionally can include the columns 'sid_chr' and 'sid_pos', which will facilitate tabix retrieval of genotypes, greatly reducing runtime.")
 	parser.add_argument("--geno", required=False, default="GT", help="Which field in VCF to use as the genotype. By default 'GT' = genotype. Setting to 'DS' will use dosage rounded to the nearest integer (IE 1.75 = 2 = 1|1).")
-	parser.add_argument("--chr", type=str, help="Limit output to a specific chromosome.")
-	parser.add_argument("--o", required=True, help="Output file")
+	parser.add_argument("--chr", type=str, help="Limit to a specific chromosome.")
 	parser.add_argument("--log_xform", type=int, required=True, help="The data has been log transformed (1/0). If so, please set --log_base.")
+	parser.add_argument("--o", required=True, help="Output file")
 	
 	# OPTIONAL
-	parser.add_argument("--matrix_o", help="Output the raw matrix data for each eQTL into the specific folder.")
+	parser.add_argument("--cov", help="Covariates file")
+	parser.add_argument("--matrix_o", help="Output the raw data matrix used to calculate aFC for each QTL into the specific folder.")
 	parser.add_argument("--boot", default=100, type=int, help="Number of bootstraps to perform for effect size confidence interval. Can be set to 0 to skip confidence interval calculation, which will greatly reduce runtimes.")
-	parser.add_argument("--ecap", default=math.log(100,2), type=float, help="Absolute effect size cap.")
-	parser.add_argument("--log_base", default=2, type=int, help="Base of log applied to data")
+	parser.add_argument("--ecap", default=math.log(100,2), type=float, help="Absolute aFC cap in log2.")
+	parser.add_argument("--log_base", default=2, type=int, help="Base of log applied to data. If other than 2, data will be converted to log2.")
 	
 	# disable warnings
 	warnings.filterwarnings("ignore");
@@ -50,7 +50,8 @@ def main():
 	print("RUN SETTINGS");
 	print("     Genotype VCF: %s"%(args.vcf));
 	print("     Phenotype File: %s"%(args.pheno));
-	print("     Covariate File: %s"%(args.cov));
+	if args.cov != None:
+		print("     Covariate File: %s"%(args.cov));
 	print("     QTL File: %s"%(args.qtl));
 	print("     Genotype Field: %s"%(args.geno));
 	print("     Log Transformed: %d"%(args.log_xform));
@@ -75,19 +76,22 @@ def main():
 	vcf_map = sample_column_map(args.vcf);
 	tabix_vcf = pysam.Tabixfile(args.vcf,"r");
 	
-	print("2. Loading covariates...");
-	df_cov = pandas.read_csv(args.cov, sep="\t", index_col=False);
+	global df_cov;
+	df_cov = pandas.DataFrame(columns=['ID']);
+	if args.cov != None:
+		print("1b. Loading covariates...");
+		df_cov = pandas.read_csv(args.cov, sep="\t", index_col=False);
 	
 	#2 get sample - column map from phenotype file
-	print("3. Loading phenotype data...");
+	print("2. Loading phenotype data...");
 	pheno_map = sample_column_map(args.pheno, line_key="#Chr", start_col=4);
 	tabix_pheno = pysam.Tabixfile(args.pheno, "r");
 		
 	# 3 load fastQTL results
-	print("4. Loading fastQTL results...");
+	print("3. Loading fastQTL results...");
 	df_qtl = pandas.read_csv(args.qtl, sep="\t", index_col=False);
 	
-	print("5. Retrieving eSNP positions...");
+	print("4. Retrieving eSNP positions...");
 	set_esnp = set(df_qtl['sid'].tolist());
 	dict_esnp = {};
 	
@@ -141,7 +145,7 @@ def main():
 		if esnp in dict_esnp: total_eqtl += 1;
 	
 	# 5 retrieve phenotype positions
-	print("6. Retrieving ePhenotype positions...");
+	print("5. Retrieving ePhenotype positions...");
 	set_epheno = set(df_qtl['pid'].tolist());
 	
 	stream_in = gzip.open(args.pheno, "r");
@@ -156,14 +160,14 @@ def main():
 	
 	stream_in.close();
 	
-	# 5 calculate effect sizes
-	print("7. Calculating eQTL effect sizes...");
+	# 6 calculate effect sizes
+	print("6. Calculating eQTL effect sizes...");
 	stream_vcf = open
 	
 	completed = 0;
 	
 	stream_out = open(args.o, "w");
-	stream_out.write("\t".join(df_qtl.columns.tolist()+['log2_esize','log2_esize_lower','log2_esize_upper\n']));
+	stream_out.write("\t".join(df_qtl.columns.tolist()+['log2_aFC','log2_aFC_lower','log2_aFC_upper\n']));
 	
 	for index, row in df_qtl.iterrows():
 		# now retrieve the genotypes for the snp
@@ -213,9 +217,9 @@ def main():
 				for sample in dict_geno.keys():
 					if args.geno == "GT":
 						if "." not in dict_geno[sample]:
-							list_rows.append([dict_geno[sample].count("1"),dict_pheno[sample]] + df_cov[sample].tolist());
+							list_rows.append([dict_geno[sample].count("1"),dict_pheno[sample]] + return_cov(sample));
 					elif args.geno == "DS":
-						list_rows.append([round(float(dict_geno[sample])),dict_pheno[sample]] + df_cov[sample].tolist());
+						list_rows.append([round(float(dict_geno[sample])),dict_pheno[sample]] + return_cov(sample));
 				
 				if len(list_rows) > 0:
 					df_test = pandas.DataFrame(list_rows, columns=['geno','pheno']+["cov_"+x for x in df_cov['ID'].tolist()]);
@@ -249,7 +253,14 @@ def main():
 	
 	duration = time.time() - start_time;
 	print("COMPLETED - total runtime was %d seconds"%(duration));
-					
+
+def return_cov(sample):
+	global df_cov;
+	
+	if sample in df_cov.columns():
+		return(df_cov[sample].tolist());
+	else:
+		return([]);
 	
 def sample_column_map(path, start_col=9, line_key="#CHR"):
 	stream_in = gzip.open(path, "r");
@@ -268,78 +279,83 @@ def sample_column_map(path, start_col=9, line_key="#CHR"):
 	return(out_map);
 
 def correct_covariates(df_test):
-	# correct for covariates
+	global df_cov;
 	
-	# add genotype categorical covariates
-	cov_homo_ref = [int(x == 0) for x in df_test['geno']];
-	if sum(cov_homo_ref) > 0:
-		df_test['cov_homo_ref'] = cov_homo_ref;
+	if len(df_cov.index) > 0:
+		# correct for covariates
+		# add genotype categorical covariates
+		cov_homo_ref = [int(x == 0) for x in df_test['geno']];
+		if sum(cov_homo_ref) > 0:
+			df_test['cov_homo_ref'] = cov_homo_ref;
 	
-	cov_homo_alt = [int(x == 2) for x in df_test['geno']];
-	if sum(cov_homo_alt) > 0:
-		df_test['cov_homo_alt'] = cov_homo_alt;
+		cov_homo_alt = [int(x == 2) for x in df_test['geno']];
+		if sum(cov_homo_alt) > 0:
+			df_test['cov_homo_alt'] = cov_homo_alt;
 	
-	cov_ids = [x for x in df_test.columns if "cov_" in x];
+		cov_ids = [x for x in df_test.columns if "cov_" in x];
 	
-	# convert categorical covariates to n-1 binary covariates
-	new_cols = {};
-	drop_cols = [];
+		# convert categorical covariates to n-1 binary covariates
+		new_cols = {};
+		drop_cols = [];
 
-	for xcov in cov_ids:
-		if df_test.dtypes[xcov] == object:
-			values = list(set(df_test[xcov]))[1:];
-			for xval in values:
-				xname = xcov+"_"+xval;
-				new_cols[xname] = [int(x == xval) for x in df_test[xcov]];
+		for xcov in cov_ids:
+			if df_test.dtypes[xcov] == object:
+				values = list(set(df_test[xcov]))[1:];
+				for xval in values:
+					xname = xcov+"_"+xval;
+					new_cols[xname] = [int(x == xval) for x in df_test[xcov]];
 		
-			drop_cols.append(xcov);
+				drop_cols.append(xcov);
 
-	df_test.drop(drop_cols,axis=1,inplace=True);
-	for xcov in new_cols.keys():
-		df_test[xcov] = new_cols[xcov];
-	cov_ids = [x for x in df_test.columns if "cov_" in x];
+		df_test.drop(drop_cols,axis=1,inplace=True);
+		for xcov in new_cols.keys():
+			df_test[xcov] = new_cols[xcov];
+		cov_ids = [x for x in df_test.columns if "cov_" in x];
 	
-	# NOTE any variable that is a string will be treated as categorical - this is the same functionality as FASTQTL, so good
-	# see: http://statsmodels.sourceforge.net/devel/example_formulas.html
+		# NOTE any variable that is a string will be treated as categorical - this is the same functionality as FASTQTL, so good
+		# see: http://statsmodels.sourceforge.net/devel/example_formulas.html
 	
-	xformula = "pheno ~ "+"+".join(cov_ids);
-	result = smf.ols(formula=xformula, data=df_test).fit();
-	
-	# use only significant (95% CI doesn't overlap 0) covariates to correct expression values
-	# do not include intercept or genotypes in correction
-	
-	drop_covs = [];
-	for xcov in list(result.params.index):
-		if xcov in df_test.columns:
-			coeffecient = result.params.loc[xcov];
-			upper_ci = result.conf_int(0.05).loc[xcov][1];
-			lower_ci = result.conf_int(0.05).loc[xcov][0];
-			if (lower_ci <= 0 and upper_ci >= 0):
-				drop_covs.append(xcov);
-	
-	# drop insignificant covariates
-	df_test.drop(drop_covs, axis=1, inplace=True);
-	cov_ids = [x for x in df_test.columns if "cov_" in x];
-	
-	# redo regression without insignificant covs
-	if len(cov_ids) > 0:
 		xformula = "pheno ~ "+"+".join(cov_ids);
-		result = smf.ols(formula=xformula, data=df_test).fit();	
-		
-		df_test_corrected = copy.deepcopy(df_test);
-		for xcov in list(result.params.index):
-			coeffecient = result.params.loc[xcov];
-			if xcov == "Intercept" or xcov == "cov_homo_ref" or xcov == "cov_homo_alt":
-				df_test_corrected[xcov] = [0] * len(df_test_corrected.index);
-			else:
-				df_test_corrected[xcov] = [x * coeffecient for x in df_test_corrected[xcov]];
-		
-		# add residual to dataframe
-		df_test_corrected['pheno_cor'] = [row['pheno'] - sum(row[2:len(row)]) for index, row in df_test_corrected.iterrows()];
+		result = smf.ols(formula=xformula, data=df_test).fit();
 	
+		# use only significant (95% CI doesn't overlap 0) covariates to correct expression values
+		# do not include intercept or genotypes in correction
+	
+		drop_covs = [];
+		for xcov in list(result.params.index):
+			if xcov in df_test.columns:
+				coeffecient = result.params.loc[xcov];
+				upper_ci = result.conf_int(0.05).loc[xcov][1];
+				lower_ci = result.conf_int(0.05).loc[xcov][0];
+				if (lower_ci <= 0 and upper_ci >= 0):
+					drop_covs.append(xcov);
+	
+		# drop insignificant covariates
+		df_test.drop(drop_covs, axis=1, inplace=True);
+		cov_ids = [x for x in df_test.columns if "cov_" in x];
+	
+		# redo regression without insignificant covs
+		if len(cov_ids) > 0:
+			xformula = "pheno ~ "+"+".join(cov_ids);
+			result = smf.ols(formula=xformula, data=df_test).fit();	
+		
+			df_test_corrected = copy.deepcopy(df_test);
+			for xcov in list(result.params.index):
+				coeffecient = result.params.loc[xcov];
+				if xcov == "Intercept" or xcov == "cov_homo_ref" or xcov == "cov_homo_alt":
+					df_test_corrected[xcov] = [0] * len(df_test_corrected.index);
+				else:
+					df_test_corrected[xcov] = [x * coeffecient for x in df_test_corrected[xcov]];
+		
+			# add residual to dataframe
+			df_test_corrected['pheno_cor'] = [row['pheno'] - sum(row[2:len(row)]) for index, row in df_test_corrected.iterrows()];
+	
+		else:
+			# if none of the covariates are significant then just leave the values as is
+			df_test_corrected = copy.deepcopy(df_test);
+			df_test_corrected['pheno_cor'] = df_test_corrected['pheno'];
 	else:
-		# if none of the covariates are significant then just leave the values as is
-		df_test_corrected = copy.deepcopy(df_test);
+		# covariates not provided
 		df_test_corrected['pheno_cor'] = df_test_corrected['pheno'];
 
 	
