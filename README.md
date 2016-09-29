@@ -21,7 +21,7 @@ Requires tabix indexed gzip compressed VCF file containing genotypes and BED fil
 * **--log_xform** - The data has been log transformed (1/0). If so, please set --log_base.
 * **--o** - Output file.
 
-#Optional
+##Optional
 * **--cov** _()_ - Covariates file. See [fastQTL](http://fastqtl.sourceforge.net/pages/format_cov.html) for format details.
 * **--matrix_o** _()_ - Output the raw data matrix used to calculate aFC for each QTL into the specific folder.
 * **--boot** _(100)_ - Number of bootstraps to perform for effect size confidence interval. Can be set to 0 to skip confidence interval calculation, which will greatly reduce runtimes.
