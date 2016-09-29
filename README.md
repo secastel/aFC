@@ -9,7 +9,7 @@ Method developed by [Pejman Mohmammadi](mailto:pmohammadi@nygenome.org), softwar
 Runs on Python 2.7.x and has the following dependencies: [pandas](http://pandas.pydata.org), [statsmodels](http://statsmodels.sourceforge.net), [scikits-bootstrap](https://github.com/cgevans/scikits-bootstrap), [NumPy](http://www.numpy.org).
 
 #Usage
-Requires tabix indexed gzip compressed VCF file containing genotypes and BED file containing phenotypes, identical to the inputs of [fastQTL](http://fastqtl.sourceforge.net), and a list of QTL to calculate aFC for. If provided, covariates will be regressed out of the expression values. Outputs the aFC and corresponding 95% confidence interval for each input eQTL.
+Requires tabix indexed gzip compressed VCF file containing genotypes and BED file containing phenotypes, identical to the inputs of [fastQTL](http://fastqtl.sourceforge.net), and a list of QTL to calculate aFC for. If provided, covariates will be regressed out of the phenotype values. Outputs the aFC and corresponding 95% confidence interval for each input eQTL.
 
 #Arguments
 ##Required
