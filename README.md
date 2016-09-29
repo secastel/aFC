@@ -29,7 +29,6 @@ Requires tabix indexed gzip compressed VCF file containing genotypes and BED fil
 * **--log_base** _(2)_ - Base of log applied to data. If other than 2, data will be converted to log2.
 
 #Output File
-sid	pid	sid_chr	sid_pos	log2_esize	log2_esize_lower	log2_esize_upper
 
 * 1 - **sid** - Variant ID.
 * 2 - **pid** - Phenotype (gene) ID.
