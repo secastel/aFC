@@ -4,6 +4,8 @@
 
 Calculates allelic Fold Change (aFC) using standard input files for [fastQTL](http://fastqtl.sourceforge.net).
 
+Please see our preprint in [bioRxiv](http://biorxiv.org/content/early/2016/09/30/078717.abstract) for details and benchmarking of the method.
+
 Method developed by [Pejman Mohmammadi](mailto:pmohammadi@nygenome.org), software by [Stephane E. Castel](mailto:scastel@nygenome.org) both in the [Lappalainen Lab](http://tllab.org) at the New York Genome Center and Columbia University Department of Systems Biology.
 
 Runs on Python 2.7.x and has the following dependencies: [pandas](http://pandas.pydata.org), [statsmodels](http://statsmodels.sourceforge.net), [scikits-bootstrap](https://github.com/cgevans/scikits-bootstrap), [NumPy](http://www.numpy.org).
