@@ -431,7 +431,7 @@ def calculate_effect_size(genos,phenos):
 		# ensure intercept is positive
 		b0 = bound_basic(result.params[0], 0, float('inf'));
 		# calculate the effect size
-		use_delta = (2 * result.params[1]) / (b0 + 1);
+		use_delta = (float(2 * result.params[1]) / float(b0)) + 1;
 		# bound effect size between -args.ecap and args.ecap in log space
 		use_delta_log = math.log(use_delta, 2);
 		use_delta_log_bounded = bound_basic(use_delta_log, -args.ecap, args.ecap);
