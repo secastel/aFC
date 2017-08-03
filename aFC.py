@@ -39,7 +39,7 @@ def main():
 	
 	args = parser.parse_args()
 	
-	version = "0.1";
+	version = "0.2";
 	print("");
 	print("########################################################")
 	print("                 Welcome to aFC v%s"%(version));
@@ -77,14 +77,23 @@ def main():
 	tabix_vcf = pysam.Tabixfile(args.vcf,"r");
 	
 	global df_cov;
-	df_cov = pandas.DataFrame(columns=['ID']);
 	if args.cov != None:
 		print("1b. Loading covariates...");
 		df_cov = pandas.read_csv(args.cov, sep="\t", index_col=False);
+		if "ID" in df_cov.columns:
+			cov_id_col = "ID";
+		elif "id" in df_cov.columns:
+			cov_id_col = "id";
+		else:
+			print("Could not find covariate ID column in covariates column. Please ensure that it is either labeled 'ID' or 'id'")
+			quit();
+	else:
+		df_cov = pandas.DataFrame(columns=['ID']);
+		cov_id_col = "ID";
 	
 	#2 get sample - column map from phenotype file
 	print("2. Loading phenotype data...");
-	pheno_map = sample_column_map(args.pheno, line_key="#Chr", start_col=4);
+	pheno_map = sample_column_map(args.pheno, line_key="#", start_col=4);
 	tabix_pheno = pysam.Tabixfile(args.pheno, "r");
 		
 	# 3 load fastQTL results
@@ -222,7 +231,7 @@ def main():
 						list_rows.append([round(float(dict_geno[sample])),dict_pheno[sample]] + return_cov(sample));
 				
 				if len(list_rows) > 0:
-					df_test = pandas.DataFrame(list_rows, columns=['geno','pheno']+["cov_"+x for x in df_cov['ID'].tolist()]);
+					df_test = pandas.DataFrame(list_rows, columns=['geno','pheno']+["cov_"+x for x in df_cov[cov_id_col].tolist()]);
 				
 					# drop samples without complete genotype data
 				
@@ -369,7 +378,10 @@ def effect_size(df_test):
 	
 	# calculate 95% CI for effect size using BCa bootstrapping
 	if args.boot > 0:
-		ci = boot.ci((df_test['geno'].tolist(),df_test['pheno_cor'].tolist()), statfunction=calculate_effect_size, alpha=0.05, n_samples=args.boot, method="bca");
+		try:
+			ci = boot.ci((df_test['geno'].tolist(),df_test['pheno_cor'].tolist()), statfunction=calculate_effect_size, alpha=0.05, n_samples=args.boot, method="bca");
+		except IndexError:
+			ci = [float('nan'),float('nan')];
 	else:
 		ci = [float('nan'),float('nan')];
 	
