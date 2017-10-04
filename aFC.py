@@ -161,6 +161,8 @@ def main():
 	
 	dict_ephenotype = {};
 	for line in stream_in:
+		if isinstance(line, bytes) and not isinstance(line, str):
+			line = line.decode()
 		if line[0:1] != "#":
 			columns = line.rstrip().split("\t");
 			#Chr    start   end     ID
@@ -276,6 +278,8 @@ def sample_column_map(path, start_col=9, line_key="#CHR"):
 	
 	out_map = {};
 	for line in stream_in:
+		if isinstance(line, bytes) and not isinstance(line, str):
+			line = line.decode()
 		if line_key in line:
 			line = line.rstrip().split("\t");
 			for i in range(start_col,len(line)):
@@ -333,7 +337,7 @@ def correct_covariates(df_test):
 		drop_covs = [];
 		for xcov in list(result.params.index):
 			if xcov in df_test.columns:
-				coeffecient = result.params.loc[xcov];
+				coefficient = result.params.loc[xcov];
 				upper_ci = result.conf_int(0.05).loc[xcov][1];
 				lower_ci = result.conf_int(0.05).loc[xcov][0];
 				if (lower_ci <= 0 and upper_ci >= 0):
@@ -350,11 +354,11 @@ def correct_covariates(df_test):
 		
 			df_test_corrected = copy.deepcopy(df_test);
 			for xcov in list(result.params.index):
-				coeffecient = result.params.loc[xcov];
+				coefficient = result.params.loc[xcov];
 				if xcov == "Intercept" or xcov == "cov_homo_ref" or xcov == "cov_homo_alt":
 					df_test_corrected[xcov] = [0] * len(df_test_corrected.index);
 				else:
-					df_test_corrected[xcov] = [x * coeffecient for x in df_test_corrected[xcov]];
+					df_test_corrected[xcov] = [x * coefficient for x in df_test_corrected[xcov]];
 		
 			# add residual to dataframe
 			df_test_corrected['pheno_cor'] = [row['pheno'] - sum(row[2:len(row)]) for index, row in df_test_corrected.iterrows()];
