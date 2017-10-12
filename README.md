@@ -4,7 +4,7 @@
 
 Calculates allelic Fold Change (aFC) using standard input files for [fastQTL](http://fastqtl.sourceforge.net).
 
-Please see our paper [Genome Research](http://genome.cshlp.org/content/early/2017/10/04/gr.216747.116.abstract) for details and benchmarking of the method.
+Please see our paper [Genome Research](http://www.genome.org/cgi/doi/10.1101/gr.216747.116) for details and benchmarking of the method.
 
 Method developed by [Pejman Mohmammadi](mailto:pmohammadi@nygenome.org), software by [Stephane E. Castel](mailto:scastel@nygenome.org) both in the [Lappalainen Lab](http://tllab.org) at the New York Genome Center and Columbia University Department of Systems Biology.
 
