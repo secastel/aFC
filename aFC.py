@@ -178,7 +178,7 @@ def main():
 	stream_vcf = open
 
 	completed = 0;
-        t = time.time()
+	t = time.time()
 
 	stream_out = open(args.o, "w");
 	stream_out.write("\t".join(df_qtl.columns.tolist()+['log2_aFC','log2_aFC_lower','log2_aFC_upper\n']));
@@ -259,10 +259,10 @@ def main():
 
 			if completed % 100 == 0:
 				print("     COMPLETED %d of %d = %f in %d seconds"%(
-                                    completed, total_eqtl,
-                                    float(completed)/float(total_eqtl),
-                                    time.time()- t));
-                                t = time.time()
+					completed, total_eqtl,
+					float(completed)/float(total_eqtl),
+					time.time()- t));
+				t = time.time()
 		else:
 			if row['pid'] != "nan" and args.chr == None:
 				print("          WARNING: positional information not found for eSNP %s"%(row['sid']));
@@ -409,23 +409,23 @@ def calculate_effect_size(genos,phenos):
 		# M5 - for log2 transformed data
 
 		#1 need to prepare 4 estimates
-                p_m = [
-		numpy.mean(phenos[genos == 0]),
-		numpy.mean(phenos[genos == 1]),
-		numpy.mean(phenos[genos == 2])
-                 ]
+		p_m = [
+			numpy.mean(phenos[genos == 0]),
+			numpy.mean(phenos[genos == 1]),
+			numpy.mean(phenos[genos == 2])
+		]
 
 		log2ratio_M2M0 = bound_basic(p_m[2] - p_m[0], -args.ecap, args.ecap);
 		log2ratio_M1M2 = bound_basic(p_m[1] - p_m[2], -1.0000001, args.ecap)
 		log2ratio_M1M0 = bound_basic(p_m[1] - p_m[0], -1, args.ecap);
 
 		p_delta = [
-                        float('nan'),
-		        math.pow(2,log2ratio_M2M0),
-		        float(1) / (math.pow(2,log2ratio_M1M2+1) - 1),
-		        math.pow(2,log2ratio_M1M0+1) - 1,
-                        None,
-                        ]
+			float('nan'),
+			math.pow(2,log2ratio_M2M0),
+			float(1) / (math.pow(2,log2ratio_M1M2+1) - 1),
+			math.pow(2,log2ratio_M1M0+1) - 1,
+			None,
+		]
 
 		X = sm.add_constant(genos);
 		result = sm.OLS(phenos,X).fit();
