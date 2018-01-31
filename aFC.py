@@ -33,6 +33,7 @@ def main():
 	parser.add_argument("--boot", default=100, type=int, help="Number of bootstraps to perform for effect size confidence interval. Can be set to 0 to skip confidence interval calculation, which will greatly reduce runtimes.")
 	parser.add_argument("--ecap", default=math.log(100,2), type=float, help="Absolute aFC cap in log2.")
 	parser.add_argument("--log_base", default=2, type=int, help="Base of log applied to data. If other than 2, data will be converted to log2.")
+	parser.add_argument("--min_samps", default=2, type=int, help="Minimum number of samples required to calculate effect size, default = 2.")
 
 	# disable warnings
 	warnings.filterwarnings("ignore");
@@ -44,8 +45,8 @@ def main():
 	version = "0.2";
 	print("");
 	print("########################################################")
-	print("                 Welcome to aFC v%s"%(version));
-	print("  Authors: Pejman Mohammadi (pmohammadi@nygenome.org),\n           Stephane Castel (scastel@nygenome.org)")
+	print("		 Welcome to aFC v%s"%(version));
+	print("  Authors: Pejman Mohammadi (pmohammadi@nygenome.org),\n	   Stephane Castel (scastel@nygenome.org)")
 	print("########################################################");
 	print("");
 
@@ -59,15 +60,16 @@ def main():
 	print("     Log Transformed: %d"%(args.log_xform));
 	if args.log_xform == 1:
 		print("     Log Base: %d"%(args.log_base));
+	print("     Minimum number of samples: %d"%(args.min_samps));
 	if args.chr != None:
 		print("     Chromosome: %s"%(args.chr));
 
 	print("");
 
 	if args.log_xform == 1:
-		print("!! PLEASE ENSURE THAT YOUR DATA HAS BEEN LOG TRANSFORMED WITH A BASE OF %d !!"%args.log_base);
+		print("!! PLEASE ENSURE THAT YOUR DATA HAVE BEEN LOG TRANSFORMED WITH A BASE OF %d !!"%args.log_base);
 	elif args.log_xform == 0:
-		print("!! PLEASE ENSURE THAT YOUR DATA HAS NOT BEEN LOG TRANSFORMED !!");
+		print("!! PLEASE ENSURE THAT YOUR DATA HAVE NOT BEEN LOG TRANSFORMED !!");
 
 	print("");
 
@@ -204,7 +206,7 @@ def main():
 							sample_col = cols[vcf_map[sample]];
 							dict_geno[sample] = sample_col.split(":")[gt_index];
 				if snp_found == 0:
-					print("          WARNING: eSNP %s not found in VCF"%(row['sid']));
+					print("	  WARNING: eSNP %s not found in VCF"%(row['sid']));
 					stream_out.write("\t".join(map(str,row.tolist()))+"\t%f\t%f\t%f"%(float('nan'),float('nan'),float('nan'))+"\n");
 					continue;
 
@@ -230,15 +232,13 @@ def main():
 
 				for sample in dict_geno.keys():
 					if args.geno == "GT":
-						if "." not in dict_geno[sample]:
+						if "." not in dict_geno[sample]:	# only include samples w/ complete genotype data (no '.')
 							list_rows.append([dict_geno[sample].count("1"),dict_pheno[sample]] + return_cov(sample));
 					elif args.geno == "DS":
 						list_rows.append([round(float(dict_geno[sample])),dict_pheno[sample]] + return_cov(sample));
 
-				if len(list_rows) > 0:
+				if len(list_rows) >= args.min_samps:		## Changed to only run effect size calc when more than minimum # samps w/ GT data
 					df_test = pandas.DataFrame(list_rows, columns=['geno','pheno']+["cov_"+x for x in df_cov[cov_id_col].tolist()]);
-
-					# drop samples without complete genotype data
 
 					if args.matrix_o != None:
 						df_test.to_csv(args.matrix_o+"/"+row['pid']+":"+row['sid']+".txt",sep="\t",index=False);
@@ -250,22 +250,22 @@ def main():
 					stream_out.write("\t".join(map(str,row.tolist()))+"\t%f\t%f\t%f"%(esize[0],esize[1],esize[2])+"\n");
 				else:
 					stream_out.write("\t".join(map(str,row.tolist()))+"\t%f\t%f\t%f"%(float('nan'),float('nan'),float('nan'))+"\n");
-					print("          WARNING: no individuals witih genotype data for eQTL %s - %s"%(row['pid'],row['sid']));
+					print("	  WARNING: no individuals with genotype data for eQTL %s - %s"%(row['pid'],row['sid']));
 			else:
 				if row['sid'] != "nan" and args.chr == None:
-					print("          WARNING: positional information not found for ePhenotype %s"%(row['pid']));
+					print("	  WARNING: positional information not found for ePhenotype %s"%(row['pid']));
 
 			completed += 1;
 
 			if completed % 100 == 0:
 				print("     COMPLETED %d of %d = %f in %d seconds"%(
-					completed, total_eqtl,
-					float(completed)/float(total_eqtl),
-					time.time()- t));
+				    completed, total_eqtl,
+				    float(completed)/float(total_eqtl),
+				    time.time()- t));
 				t = time.time()
 		else:
 			if row['pid'] != "nan" and args.chr == None:
-				print("          WARNING: positional information not found for eSNP %s"%(row['sid']));
+				print("	  WARNING: positional information not found for eSNP %s"%(row['sid']));
 
 	stream_out.close();
 
@@ -391,7 +391,7 @@ def effect_size(df_test):
 	if args.boot > 0:
 		try:
 			ci = boot.ci((df_test['geno'].tolist(),df_test['pheno_cor'].tolist()), statfunction=calculate_effect_size, alpha=0.05, n_samples=args.boot, method="bca");
-		except IndexError:
+		except (IndexError,ValueError):		## ValueError added for calculating CI on one sample
 			ci = [float('nan'),float('nan')];
 	else:
 		ci = [float('nan'),float('nan')];
