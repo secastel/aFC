@@ -250,7 +250,10 @@ def main():
 					stream_out.write("\t".join(map(str,row.tolist()))+"\t%f\t%f\t%f"%(esize[0],esize[1],esize[2])+"\n");
 				else:
 					stream_out.write("\t".join(map(str,row.tolist()))+"\t%f\t%f\t%f"%(float('nan'),float('nan'),float('nan'))+"\n");
-					print("	  WARNING: no individuals with genotype data for eQTL %s - %s"%(row['pid'],row['sid']));
+					if len(list_rows) == 0:
+						print("	  WARNING: no individual with genotype data for eQTL %s - %s"%(row['pid'],row['sid']));
+					else:
+						print("	  WARNING: only %d individual(s) with genotype data for eQTL %s - %s"%(len(list_rows),row['pid'],row['sid']));
 			else:
 				if row['sid'] != "nan" and args.chr == None:
 					print("	  WARNING: positional information not found for ePhenotype %s"%(row['pid']));
