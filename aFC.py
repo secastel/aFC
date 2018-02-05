@@ -60,6 +60,7 @@ def main():
 	print("     Log Transformed: %d"%(args.log_xform));
 	if args.log_xform == 1:
 		print("     Log Base: %d"%(args.log_base));
+	print("     Boostraps: %d"%(args.boot));
 	print("     Minimum number of samples: %d"%(args.min_samps));
 	if args.chr != None:
 		print("     Chromosome: %s"%(args.chr));
