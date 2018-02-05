@@ -419,7 +419,7 @@ def calculate_effect_size(genos,phenos):
 		]
 
 		log2ratio_M2M0 = bound_basic(p_m[2] - p_m[0], -args.ecap, args.ecap);
-		log2ratio_M1M2 = bound_basic(p_m[1] - p_m[2], -1.0000001, args.ecap)
+		log2ratio_M1M2 = bound_basic(p_m[1] - p_m[2], -0.9999999, args.ecap);
 		log2ratio_M1M0 = bound_basic(p_m[1] - p_m[0], -1, args.ecap);
 
 		p_delta = [
