@@ -238,7 +238,7 @@ def main():
 					if args.geno == "GT":
 						if "." not in dict_geno[sample]:	# only include samples w/ complete genotype data (no '.')
 							list_rows.append([dict_geno[sample].count("1"),dict_pheno[sample]] + return_cov(sample));
-							allele_counts[0] += dict_geno[sample].count("1");
+							allele_counts[0] += dict_geno[sample].count("0");
 							allele_counts[1] += dict_geno[sample].count("1");
 					elif args.geno == "DS":
 						list_rows.append([round(float(dict_geno[sample])),dict_pheno[sample]] + return_cov(sample));
