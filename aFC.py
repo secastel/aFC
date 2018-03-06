@@ -33,7 +33,8 @@ def main():
 	parser.add_argument("--boot", default=100, type=int, help="Number of bootstraps to perform for effect size confidence interval. Can be set to 0 to skip confidence interval calculation, which will greatly reduce runtimes.")
 	parser.add_argument("--ecap", default=math.log(100,2), type=float, help="Absolute aFC cap in log2.")
 	parser.add_argument("--log_base", default=2, type=int, help="Base of log applied to data. If other than 2, data will be converted to log2.")
-	parser.add_argument("--min_samps", default=2, type=int, help="Minimum number of samples required to calculate effect size, default = 2.")
+	parser.add_argument("--min_samps", default=2, type=int, help="Minimum number of samples with genotype data required to calculate effect size, default = 2.")
+	parser.add_argument("--min_alleles", default=1, type=int, help="Minimum observations of each allele in data to calculate aFC, default = 1.")
 
 	# disable warnings
 	warnings.filterwarnings("ignore");
@@ -42,7 +43,7 @@ def main():
 
 	args = parser.parse_args()
 
-	version = "0.2";
+	version = "0.3";
 	print("");
 	print("########################################################")
 	print("		 Welcome to aFC v%s"%(version));
@@ -62,6 +63,7 @@ def main():
 		print("     Log Base: %d"%(args.log_base));
 	print("     Boostraps: %d"%(args.boot));
 	print("     Minimum number of samples: %d"%(args.min_samps));
+	print("     Minimum number of allele observations: %d"%(args.min_alleles));
 	if args.chr != None:
 		print("     Chromosome: %s"%(args.chr));
 
@@ -190,6 +192,7 @@ def main():
 		# now retrieve the genotypes for the snp
 		# only for those individuals with phenotype data
 		dict_geno = {};
+		line_written = False;
 
 		if row['sid'] in dict_esnp:
 			if row['pid'] in dict_ephenotype:
@@ -208,7 +211,6 @@ def main():
 							dict_geno[sample] = sample_col.split(":")[gt_index];
 				if snp_found == 0:
 					print("	  WARNING: eSNP %s not found in VCF"%(row['sid']));
-					stream_out.write("\t".join(map(str,row.tolist()))+"\t%f\t%f\t%f"%(float('nan'),float('nan'),float('nan'))+"\n");
 					continue;
 
 				# assume phenotype is within a megabase of SNP
@@ -230,15 +232,18 @@ def main():
 
 				# make a dataframe with all covariates and genotype classes
 				list_rows = [];
+				allele_counts = [0,0];
 
 				for sample in dict_geno.keys():
 					if args.geno == "GT":
 						if "." not in dict_geno[sample]:	# only include samples w/ complete genotype data (no '.')
 							list_rows.append([dict_geno[sample].count("1"),dict_pheno[sample]] + return_cov(sample));
+							allele_counts[0] += dict_geno[sample].count("1");
+							allele_counts[1] += dict_geno[sample].count("1");
 					elif args.geno == "DS":
 						list_rows.append([round(float(dict_geno[sample])),dict_pheno[sample]] + return_cov(sample));
 
-				if len(list_rows) >= args.min_samps:		## Changed to only run effect size calc when more than minimum # samps w/ GT data
+				if len(list_rows) >= args.min_samps and min(allele_counts) >= args.min_alleles:		## Changed to only run effect size calc when more than minimum # samps w/ GT data and minimum number of observations for each allele
 					df_test = pandas.DataFrame(list_rows, columns=['geno','pheno']+["cov_"+x for x in df_cov[cov_id_col].tolist()]);
 
 					if args.matrix_o != None:
@@ -249,12 +254,14 @@ def main():
 
 					esize = effect_size(df_test);
 					stream_out.write("\t".join(map(str,row.tolist()))+"\t%f\t%f\t%f"%(esize[0],esize[1],esize[2])+"\n");
+					line_written = True;
 				else:
-					stream_out.write("\t".join(map(str,row.tolist()))+"\t%f\t%f\t%f"%(float('nan'),float('nan'),float('nan'))+"\n");
 					if len(list_rows) == 0:
 						print("	  WARNING: no individual with genotype data for eQTL %s - %s"%(row['pid'],row['sid']));
-					else:
+					elif len(list_rows) < args.min_samps:
 						print("	  WARNING: only %d individual(s) with genotype data for eQTL %s - %s"%(len(list_rows),row['pid'],row['sid']));
+					elif min(allele_counts) < args.min_alleles:
+						print("	  WARNING: only %d observations of minor allele for eQTL %s - %s"%(min(allele_counts),row['pid'],row['sid']));
 			else:
 				if row['sid'] != "nan" and args.chr == None:
 					print("	  WARNING: positional information not found for ePhenotype %s"%(row['pid']));
@@ -270,6 +277,11 @@ def main():
 		else:
 			if row['pid'] != "nan" and args.chr == None:
 				print("	  WARNING: positional information not found for eSNP %s"%(row['sid']));
+		
+		# ensure that every eQTL has a line written so number of output lines = number of input eQTLs
+		if ("sid_chr" in df_qtl.columns and (row['sid_chr'] == args.chr or args.chr == None)):
+			if line_written == False:
+				stream_out.write("\t".join(map(str,row.tolist()))+"\t%f\t%f\t%f"%(float('nan'),float('nan'),float('nan'))+"\n");
 
 	stream_out.close();
 
