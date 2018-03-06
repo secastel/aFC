@@ -35,6 +35,7 @@ def main():
 	parser.add_argument("--log_base", default=2, type=int, help="Base of log applied to data. If other than 2, data will be converted to log2.")
 	parser.add_argument("--min_samps", default=2, type=int, help="Minimum number of samples with genotype data required to calculate effect size, default = 2.")
 	parser.add_argument("--min_alleles", default=1, type=int, help="Minimum observations of each allele in data to calculate aFC, default = 1.")
+	parser.add_argument("--count_o", default=0, type=int, help="Output the observed allele counts, default = 0.")
 
 	# disable warnings
 	warnings.filterwarnings("ignore");
@@ -62,7 +63,7 @@ def main():
 	if args.log_xform == 1:
 		print("     Log Base: %d"%(args.log_base));
 	print("     Boostraps: %d"%(args.boot));
-	print("     Minimum number of samples: %d"%(args.min_samps));
+	print("     Minimum number of samples with genotype data: %d"%(args.min_samps));
 	print("     Minimum number of allele observations: %d"%(args.min_alleles));
 	if args.chr != None:
 		print("     Chromosome: %s"%(args.chr));
@@ -186,13 +187,17 @@ def main():
 	t = time.time()
 
 	stream_out = open(args.o, "w");
-	stream_out.write("\t".join(df_qtl.columns.tolist()+['log2_aFC','log2_aFC_lower','log2_aFC_upper\n']));
+	headers = ['log2_aFC','log2_aFC_lower','log2_aFC_upper'];
+	if args.count_o == 1:
+		headers += ['ref_allele_count','alt_allele_count'];
+	stream_out.write("\t".join(df_qtl.columns.tolist()+headers)+"\n");
 
 	for index, row in df_qtl.iterrows():
 		# now retrieve the genotypes for the snp
 		# only for those individuals with phenotype data
 		dict_geno = {};
 		line_written = False;
+		allele_counts = None;
 
 		if row['sid'] in dict_esnp:
 			if row['pid'] in dict_ephenotype:
@@ -253,7 +258,11 @@ def main():
 					df_test = correct_covariates(df_test);
 
 					esize = effect_size(df_test);
-					stream_out.write("\t".join(map(str,row.tolist()))+"\t%f\t%f\t%f"%(esize[0],esize[1],esize[2])+"\n");
+					line_out = row.tolist()+esize[0:3];
+					if args.count_o == 1:
+						line_out += allele_counts;
+
+					stream_out.write("\t".join(map(str,line_out))+"\n")
 					line_written = True;
 				else:
 					if len(list_rows) == 0:
@@ -279,9 +288,15 @@ def main():
 				print("	  WARNING: positional information not found for eSNP %s"%(row['sid']));
 		
 		# ensure that every eQTL has a line written so number of output lines = number of input eQTLs
-		if ("sid_chr" in df_qtl.columns and (row['sid_chr'] == args.chr or args.chr == None)):
+		if ("sid_chr" in df_qtl.columns and (str(row['sid_chr']) == args.chr or args.chr == None)):
 			if line_written == False:
-				stream_out.write("\t".join(map(str,row.tolist()))+"\t%f\t%f\t%f"%(float('nan'),float('nan'),float('nan'))+"\n");
+				line_out = row.tolist()+[float('nan'),float('nan'),float('nan')]
+				if args.count_o == 1:
+					if allele_counts != None:
+						line_out += allele_counts;
+					else:
+						line_out += [float('nan'),float('nan')]
+				stream_out.write("\t".join(map(str,line_out))+"\n");
 
 	stream_out.close();
 
