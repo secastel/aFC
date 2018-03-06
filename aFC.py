@@ -414,7 +414,7 @@ def correct_covariates(df_test):
 	return(df_test_corrected);
 
 def effect_size(df_test):
-	import argparse;
+	global args;
 	# calculate effect size
 	esize = calculate_effect_size(df_test['geno'],df_test['pheno_cor']);
 
