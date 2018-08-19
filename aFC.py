@@ -2,7 +2,7 @@
 
 import pysam
 import argparse
-import pandas
+import pandas as pd
 import gzip
 import tempfile
 import subprocess
@@ -10,7 +10,7 @@ import os
 import statsmodels.formula.api as smf
 import statsmodels.api as sm
 import copy
-import numpy
+import numpy as np
 import math
 import scikits.bootstrap as boot
 import time
@@ -89,7 +89,7 @@ def main():
 	global df_cov
 	if args.cov != None:
 		print("1b. Loading covariates...")
-		df_cov = pandas.read_csv(args.cov, sep="\t", index_col=False)
+		df_cov = pd.read_csv(args.cov, sep="\t", index_col=False)
 		if "ID" in df_cov.columns:
 			cov_id_col = "ID"
 		elif "id" in df_cov.columns:
@@ -98,7 +98,7 @@ def main():
 			print("Could not find covariate ID column in covariates column. Please ensure that it is either labeled 'ID' or 'id'")
 			quit()
 	else:
-		df_cov = pandas.DataFrame(columns=['ID'])
+		df_cov = pd.DataFrame(columns=['ID'])
 		cov_id_col = "ID"
 
 	#2 get sample - column map from phenotype file
@@ -108,7 +108,7 @@ def main():
 
 	# 3 load fastQTL results
 	print("3. Loading fastQTL results...")
-	df_qtl = pandas.read_csv(args.qtl, sep="\t", index_col=False)
+	df_qtl = pd.read_csv(args.qtl, sep="\t", index_col=False)
 
 	print("4. Retrieving eSNP positions...")
 	set_esnp = set(df_qtl['sid'].tolist())
@@ -251,7 +251,7 @@ def main():
 						list_rows.append([round(float(dict_geno[sample])),dict_pheno[sample]] + return_cov(sample))
 
 				if len(list_rows) >= args.min_samps and min(allele_counts) >= args.min_alleles:		## Changed to only run effect size calc when more than minimum # samps w/ GT data and minimum number of observations for each allele
-					df_test = pandas.DataFrame(list_rows, columns=['geno','pheno']+["cov_"+x for x in df_cov[cov_id_col].tolist()])
+					df_test = pd.DataFrame(list_rows, columns=['geno','pheno']+["cov_"+x for x in df_cov[cov_id_col].tolist()])
 
 					if args.matrix_o != None:
 						df_test.to_csv(args.matrix_o+"/"+row['pid']+":"+row['sid']+".txt",sep="\t",index=False)
@@ -443,9 +443,9 @@ def calculate_effect_size(genos,phenos):
 
 		#1 need to prepare 4 estimates
 		p_m = [
-			numpy.mean(phenos[genos == 0]),
-			numpy.mean(phenos[genos == 1]),
-			numpy.mean(phenos[genos == 2])
+			np.mean(phenos[genos == 0]),
+			np.mean(phenos[genos == 1]),
+			np.mean(phenos[genos == 2])
 		]
 
 		log2ratio_M2M0 = bound_basic(p_m[2] - p_m[0], -args.ecap, args.ecap)
@@ -473,7 +473,7 @@ def calculate_effect_size(genos,phenos):
 		# pick the estimate that minimizes residual variance
 		for i in range(1,5):
 			#stdevs[i] = numpy.std([yi - calculate_expected_expr(p_delta[i], xi) for xi, yi in zip(genos, phenos)])
-			stdevs[i] = numpy.std(phenos - numpy.log2((2 - genos) + (p_delta[i] * genos)))
+			stdevs[i] = np.std(phenos - np.log2((2 - genos) + (p_delta[i] * genos)))
 
 		min_delta = min([x for x in stdevs.values() if math.isnan(x) == False])
 		use_delta = 0
@@ -489,7 +489,7 @@ def calculate_effect_size(genos,phenos):
 		X = sm.add_constant(genos)
 		result = sm.OLS(phenos,X).fit()
 		# ensure intercept is positive
-		b0 = bound_basic(result.params[0], numpy.finfo(float).eps, float('inf'))
+		b0 = bound_basic(result.params[0], np.finfo(float).eps, float('inf'))
 		# calculate the effect size
 		use_delta = (float(2 * result.params[1]) / float(b0)) + 1
 
@@ -509,7 +509,8 @@ def calculate_effect_size(genos,phenos):
 def bound_basic(x, l, h):
 	y = min([x,h])
 	y = max([y,l])
-	if math.isnan(x) == True: y = float('nan')
+	if math.isnan(x) == True: 
+		y = float('nan')
 	return(y)
 
 def calculate_expected_expr(delta, alt_alleles):
