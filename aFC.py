@@ -1,22 +1,21 @@
 #!/usr/bin/env python
 
-import pysam
 import argparse
-import pandas as pd
-import gzip
-import tempfile
-import subprocess
-import os
-import statsmodels.formula.api as smf
-import statsmodels.api as sm
 import copy
-import numpy as np
+import gzip
 import math
+import numpy as np
+import os
+import pandas as pd
+import pysam
 import scikits.bootstrap as boot
+import statsmodels.api as sm
+import statsmodels.formula.api as smf
+import subprocess
+import tempfile
 import time
 import warnings
 
-#numpy.random.seed(42)
 
 def main():
 	parser = argparse.ArgumentParser()
@@ -305,6 +304,7 @@ def main():
 	duration = time.time() - start_time
 	print("COMPLETED - total runtime was %d seconds"%(duration))
 
+
 def return_cov(sample):
 	global df_cov
 
@@ -312,6 +312,7 @@ def return_cov(sample):
 		return(df_cov[sample].tolist())
 	else:
 		return([])
+
 
 def sample_column_map(path, start_col=9, line_key="#CHR"):
 	stream_in = gzip.open(path, "r")
@@ -330,6 +331,7 @@ def sample_column_map(path, start_col=9, line_key="#CHR"):
 	stream_in.close()
 
 	return(out_map)
+
 
 def correct_covariates(df_test):
 	global df_cov
@@ -415,6 +417,7 @@ def correct_covariates(df_test):
 
 	return(df_test_corrected)
 
+
 def effect_size(df_test):
 	global args
 	# calculate effect size
@@ -430,6 +433,7 @@ def effect_size(df_test):
 		ci = [float('nan'),float('nan')]
 
 	return([esize, ci[0],ci[1]])
+
 
 def calculate_effect_size(genos,phenos):
 	global args
@@ -506,6 +510,7 @@ def calculate_effect_size(genos,phenos):
 
 		return(use_delta_log_bounded)
 
+
 def bound_basic(x, l, h):
 	y = min([x,h])
 	y = max([y,l])
@@ -513,11 +518,13 @@ def bound_basic(x, l, h):
 		y = float('nan')
 	return(y)
 
+
 def calculate_expected_expr(delta, alt_alleles):
 	if math.isnan(delta) == False:
 		return(math.log((2 - alt_alleles) + (delta * alt_alleles), 2))
 	else:
 		return(float('nan'))
+
 
 if __name__ == "__main__":
 	main()
