@@ -8,7 +8,7 @@ Please see our paper [Genome Research](http://www.genome.org/cgi/doi/10.1101/gr.
 
 Method developed by [Pejman Mohmammadi](mailto:pmohammadi@nygenome.org), software by [Stephane E. Castel](mailto:scastel@nygenome.org) both in the [Lappalainen Lab](http://tllab.org) at the New York Genome Center and Columbia University Department of Systems Biology.
 
-Runs on Python 2.7.x and has the following dependencies: [pandas](http://pandas.pydata.org), [statsmodels](http://statsmodels.sourceforge.net), [scikits-bootstrap](https://github.com/cgevans/scikits-bootstrap), [NumPy](http://www.numpy.org).
+Runs on Python 2.7.x and 3.x, and has the following dependencies: [pandas](http://pandas.pydata.org), [statsmodels](http://statsmodels.sourceforge.net), [scikits-bootstrap](https://github.com/cgevans/scikits-bootstrap), [NumPy](http://www.numpy.org).
 
 # Usage
 Requires tabix indexed gzip compressed VCF file containing genotypes and BED file containing phenotypes, identical to the inputs of [fastQTL](http://fastqtl.sourceforge.net), and a list of QTL to calculate aFC for. If provided, covariates will be regressed out of the phenotype values. Outputs the aFC and corresponding 95% confidence interval for each input QTL.
@@ -21,7 +21,7 @@ Requires tabix indexed gzip compressed VCF file containing genotypes and BED fil
 * **--geno** - Which field in VCF to use as the genotype. By default 'GT' = genotype. Setting to 'DS' will use dosage rounded to the nearest integer (IE 1.75 = 2 = 1|1).
 * **--chr** - Limit to a specific chromosome.
 * **--log_xform** - The data has been log transformed (1/0). If so, please set --log_base.
-* **--o** - Output file.
+* **--output** - Output file.
 
 ## Optional
 * **--cov** _()_ - Covariates file. See [fastQTL](http://fastqtl.sourceforge.net/pages/format_cov.html) for format details.
