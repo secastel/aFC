@@ -10,7 +10,7 @@ Please see our paper [Genome Research](http://www.genome.org/cgi/doi/10.1101/gr.
 
 Method developed by [Pejman Mohmammadi](mailto:pmohammadi@nygenome.org), software by [Stephane E. Castel](mailto:scastel@nygenome.org) both in the [Lappalainen Lab](http://tllab.org) at the New York Genome Center and Columbia University Department of Systems Biology.
 
-Runs on Python 2.7.x and 3.x, and has the following dependencies: [pandas](http://pandas.pydata.org), [statsmodels](http://statsmodels.sourceforge.net), [scikits-bootstrap](https://github.com/cgevans/scikits-bootstrap), [NumPy](http://www.numpy.org).
+Runs on Python 2.7.x and 3.x, and has the following dependencies: [pandas](http://pandas.pydata.org), [statsmodels](http://statsmodels.sourceforge.net), [scikits.bootstrap](https://github.com/cgevans/scikits-bootstrap), [NumPy](http://www.numpy.org), [pysam](https://github.com/pysam-developers/pysam).
 
 # Usage
 Requires tabix indexed gzip compressed VCF file containing genotypes and BED file containing phenotypes, identical to the inputs of [fastQTL](http://fastqtl.sourceforge.net), and a list of QTL to calculate aFC for. If provided, covariates will be regressed out of the phenotype values. Outputs the aFC and corresponding 95% confidence interval for each input QTL.
