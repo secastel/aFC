@@ -1,4 +1,6 @@
 
+[![Build Status](https://api.travis-ci.org/secastel/aFC.svg?branch=master)](https://travis-ci.org/secastel/aFC?branch=master)
+
 # aFC
 **a**llelic **F**old **C**hange
 
