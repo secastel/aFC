@@ -251,6 +251,8 @@ def main():
 
 				if len(list_rows) >= args.min_samps and min(allele_counts) >= args.min_alleles:		## Changed to only run effect size calc when more than minimum # samps w/ GT data and minimum number of observations for each allele
 					df_test = pd.DataFrame(list_rows, columns=['geno','pheno']+["cov_"+x for x in df_cov[cov_id_col].tolist()])
+					for col in df_test.columns:
+						df_test[col] = pd.to_numeric(df_test[col], errors = 'ignore')
 
 					if args.matrix_o != None:
 						df_test.to_csv(args.matrix_o+"/"+row['pid']+":"+row['sid']+".txt",sep="\t",index=False)
