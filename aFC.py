@@ -47,7 +47,7 @@ def main():
 
 	args = parser.parse_args()
 
-	version = "0.3"
+	version = "0.3.1"
 	print("")
 	print("########################################################")
 	print("		 Welcome to aFC v%s"%(version))
