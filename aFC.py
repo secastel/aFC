@@ -27,8 +27,10 @@ def main():
 	parser.add_argument("--chr", type=str, help="Limit to a specific chromosome.")
 	parser.add_argument("--log_xform", type=int, required=True, help="The data has been log transformed (1/0). If so, please set --log_base.")
 	parser.add_argument("--output", "--o", required=True, help="Output file")
-
 	# OPTIONAL
+	parser.add_argument('--output_se', action='store_true', help="Adds an output column with the standard error of the estimated coefficient")
+	parser.add_argument('--no_output_se', dest='include_se', action='store_false')
+	parser.set_defaults(output_se=False)
 	parser.add_argument("--cov", help="Covariates file")
 	parser.add_argument("--matrix_o", help="Output the raw data matrix used to calculate aFC for each QTL into the specific folder.")
 	parser.add_argument("--boot", default=100, type=int, help="Number of bootstraps to perform for effect size confidence interval. Can be set to 0 to skip confidence interval calculation, which will greatly reduce runtimes.")
@@ -189,8 +191,11 @@ def main():
 
 	stream_out = open(args.output, "w")
 	headers = ['log2_aFC','log2_aFC_lower','log2_aFC_upper']
+	if args.output_se:
+		headers += ["log2_aFC_se"]
 	if args.count_o == 1:
 		headers += ['ref_allele_count','alt_allele_count']
+
 	stream_out.write("\t".join(df_qtl.columns.tolist()+headers)+"\n")
 
 	for index, row in df_qtl.iterrows():
@@ -262,6 +267,8 @@ def main():
 
 					esize = effect_size(df_test)
 					line_out = row.tolist()+esize[0:3]
+					if args.output_se:
+						line_out += esize[3]
 					if args.count_o == 1:
 						line_out += allele_counts
 
@@ -428,13 +435,21 @@ def effect_size(df_test):
 	# calculate 95% CI for effect size using BCa bootstrapping
 	if args.boot > 0:
 		try:
-			ci = boot.ci((df_test['geno'].tolist(),df_test['pheno_cor'].tolist()), statfunction=calculate_effect_size, alpha=0.05, n_samples=args.boot, method="bca")
+			ci, dist = boot.ci((df_test['geno'].tolist(),df_test['pheno_cor'].tolist()), statfunction=calculate_effect_size, alpha=0.05, n_samples=args.boot, method="bca", return_dist=True)
 		except (IndexError,ValueError):		## ValueError added for calculating CI on one sample
-			ci = [float('nan'),float('nan')]
+			ci, dist = [float('nan'),float('nan')], None
 	else:
-		ci = [float('nan'),float('nan')]
+		ci, dist = [float('nan'),float('nan')], None
 
-	return([esize, ci[0],ci[1]])
+	return_value = [esize, ci[0], ci[1]]
+	if args.output_se:
+		if dist is None:
+			se = float('nan')
+		else:
+			se = np.sqrt(np.sum(np.square(np.subtract(dist, esize))) / (len(dist) - 1))
+		return_value += [se]
+
+	return return_value
 
 
 def calculate_effect_size(genos,phenos):
